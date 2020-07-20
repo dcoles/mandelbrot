@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mandelbrot</title>
+  <script src="mandelbrot.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1024" height="768"></canvas>
+  <script>
+    window.addEventListener("load", function (ev) {
+        const canvas = document.getElementById("canvas");
+
+        drawMandelbrot(canvas);
+        console.log('Done');
+    })
+  </script>
+</body>
+</html>
