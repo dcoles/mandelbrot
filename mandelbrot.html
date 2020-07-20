@@ -8,11 +8,23 @@
 <body>
   <canvas id="canvas" width="1024" height="768"></canvas>
   <script>
-    window.addEventListener("load", function (ev) {
-        const canvas = document.getElementById("canvas");
+    window.addEventListener('load', function(e) {
+        if (!window.Worker) {
+            window.alert('Sorry! This browser does not support web workers');
+            return;
+        }
 
-        drawMandelbrot(canvas);
-        console.log('Done');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const worker = new Worker('mandelbrot.js');
+        worker.onmessage = function(e) {
+            // Draw completed fractal
+            ctx.putImageData(e.data, 0, 0);
+        };
+
+        // Start rendering
+        worker.postMessage([canvas.width, canvas.height]);
     })
   </script>
 </body>
