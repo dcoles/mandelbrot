@@ -1,3 +1,13 @@
+const BYTES_PER_PIXEL = 4;  // RGBA
+
+const SCALE = 0.4;  // Scale of the image
+const BAILOUT = 256;  // Distance after which the point is considered to have escaped
+const MAX_ITERATIONS = 1000;  // Maximum iterations to test for escape
+const TARGET = 20;  // Steps of TARGET colour
+const STEPS = 25;  // Steps out from TARGET to black
+
+const GROWTH = Math.pow(255, 1 / STEPS);
+
 /**
  * Draw Mandelbrot onto Canvas.
  *
@@ -5,49 +15,22 @@
  * @param {number} height Height of the drawing.
  */
 function drawMandelbrot(width, height) {
-    const bpp = 4; // bytes-per-pixel
     const xoff = -2 * width / 3;
     const yoff = -height / 2;
-    const scale = 0.4;
-    const maxIterations = 1000;
-    const target = 20;  // Steps of target colour
-    const steps = 25;  // Steps out from target to black
 
-    const growth = Math.pow(255, 1 / steps);
-
-    let data = new Uint8ClampedArray(width * height * bpp);
-    for (let i = 0; i < data.length; i += bpp) {
-        const x = Math.floor(i / bpp) % width;
-        const y = Math.floor(i / (width * bpp));
+    let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
+    for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
+        const x = Math.floor(i / BYTES_PER_PIXEL) % width;
+        const y = Math.floor(i / (width * BYTES_PER_PIXEL));
 
         // Adjusted for screen space
-        const xadj = (x + xoff) / height / scale;
-        const yadj = (y + yoff) / height / scale;
+        const xadj = (x + xoff) / height / SCALE;
+        const yadj = (y + yoff) / height / SCALE;
         const c = [xadj, yadj];
 
-        let n = escape(c, maxIterations);
-        if (n === Infinity) {
-            // White (#ffffff)
-            data[i] = 0xff;  // R
-            data[i + 1] = 0xff;  // G
-            data[i + 2] = 0xff;  // B
-            data[i + 3] = 0xff;  // A
-        /* For debugging
-        } else if (n === target) {
-            // Red (#ff0000)
-            data[i] = 0xff;  // R
-            data[i + 1] = 0x00;  // G
-            data[i + 2] = 0x00;  // B
-            data[i + 3] = 0xff;  //
-        */
-        } else {
-            // Blue fire
-            const intensity = Math.pow(growth, n - target);
-            data[i]   = (intensity - 2) * 0xff;  // R
-            data[i+1] = (intensity - 1) * 0xff;  // G
-            data[i+2] = intensity * 0xff;  // B
-            data[i+3] = 0xff;  // A
-        }
+        let n = escape(c, MAX_ITERATIONS);
+        let pixel = pixelColor(n);
+        data.set(pixel, i);
     }
 
     return new ImageData(data, width, height);
@@ -61,15 +44,14 @@ function drawMandelbrot(width, height) {
  * @returns {number} Smoothed number of iterations required to escape or `Infinity`.
  */
 function escape(c, maxIterations) {
-    const bailout = 256;
     let z = [0, 0];
     for (let n = 0; n < maxIterations; n++) {
         z = f(z, c);
 
         const dist = Math.sqrt(Math.pow(z[0], 2) + Math.pow(z[1], 2));
-        if (dist > bailout) {
+        if (dist > BAILOUT) {
             // Smoothing function
-            return n - Math.log( Math.log(dist) / Math.log(bailout)) / Math.log(2);
+            return n - Math.log( Math.log(dist) / Math.log(BAILOUT)) / Math.log(2);
         }
     }
 
@@ -88,6 +70,40 @@ function f(z, c) {
         z[0] * z[0] - z[1] * z[1] + c[0],  // Real
         2 * z[0] * z[1] + c[1]  // Imaginary
     ]
+}
+
+/**
+ * Calculate color of pixel based on number of iterations to escape.
+ *
+ * @param {number} n Number of iterations.
+ */
+function pixelColor(n) {
+    const data = new Uint8ClampedArray(4);
+
+    if (n === Infinity) {
+        // White (#ffffff)
+        data[0] = 0xff;  // R
+        data[1] = 0xff;  // G
+        data[2] = 0xff;  // B
+        data[3] = 0xff;  // A
+/* For debugging
+    } else if (n === TARGET) {
+        // Red (#ff0000)
+        data[0] = 0xff;  // R
+        data[1] = 0x00;  // G
+        data[2] = 0x00;  // B
+        data[3] = 0xff;  // A
+*/
+    } else {
+        // Blue fire
+        const intensity = Math.pow(GROWTH, n - TARGET);
+        data[0]   = (intensity - 2) * 0xff;  // R
+        data[1] = (intensity - 1) * 0xff;  // G
+        data[2] = intensity * 0xff;  // B
+        data[3] = 0xff;  // A
+    }
+
+    return data;
 }
 
 /**
