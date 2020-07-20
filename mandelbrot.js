@@ -1,8 +1,9 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
 const SCALE = 0.4;  // Scale of the image
+const SUPERSAMPLE = 4;  // NxN super-sampling
 const BAILOUT = 256;  // Distance after which the point is considered to have escaped
-const MAX_ITERATIONS = 1000;  // Maximum iterations to test for escape
+const MAX_ITERATIONS = 100;  // Maximum iterations to test for escape
 const TARGET = 20;  // Steps of TARGET colour
 const STEPS = 25;  // Steps out from TARGET to black
 
@@ -17,6 +18,9 @@ const GROWTH = Math.pow(255, 1 / STEPS);
 function drawMandelbrot(width, height) {
     const xoff = -2 * width / 3;
     const yoff = -height / 2;
+    const scale = (height * SCALE);
+    const ssStep = 1 / (scale * SUPERSAMPLE);
+    const ssNorm = Math.pow(SUPERSAMPLE, 2);
 
     let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
     for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
@@ -24,12 +28,21 @@ function drawMandelbrot(width, height) {
         const y = Math.floor(i / (width * BYTES_PER_PIXEL));
 
         // Adjusted for screen space
-        const xadj = (x + xoff) / height / SCALE;
-        const yadj = (y + yoff) / height / SCALE;
-        const c = [xadj, yadj];
+        const xadj = (x + xoff) / scale;
+        const yadj = (y + yoff) / scale;
 
-        let n = escape(c, MAX_ITERATIONS);
-        let pixel = pixelColor(n);
+        let pixel = new Uint8ClampedArray(BYTES_PER_PIXEL);
+        for (let i = 0; i < SUPERSAMPLE; i++) {
+            for (let j = 0; j < SUPERSAMPLE; j++) {
+                const c = [xadj + i * ssStep, yadj + j * ssStep];
+                let n = escape(c, MAX_ITERATIONS);
+                let p = pixelColor(n);
+                for (let k = 0; k < BYTES_PER_PIXEL; k++) {
+                    pixel[k] += p[k] / ssNorm;
+                }
+            }
+        }
+
         data.set(pixel, i);
     }
 
