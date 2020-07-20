@@ -17,6 +17,10 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Rendering fractal...', canvas.width / 2, canvas.height / 2);
+
         const worker = new Worker('mandelbrot.js');
         worker.onmessage = function(e) {
             // Draw completed fractal
