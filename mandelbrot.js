@@ -14,11 +14,12 @@ const GROWTH = Math.pow(255, 1 / STEPS);
  *
  * @param {number} width Width of the drawing.
  * @param {number} height Height of the drawing.
+ * @param {object} options Custom options.
  */
-function drawMandelbrot(width, height) {
-    const xoff = -2 * width / 3;
-    const yoff = -height / 2;
-    const scale = (height * SCALE);
+function drawMandelbrot(width, height, options) {
+    const xoff = -(options.offsetX || 0);
+    const yoff = -(options.offsetY || 0);
+    const scale = (options.scale || SCALE);
     const ssStep = 1 / (scale * SUPERSAMPLE);
     const ssNorm = Math.pow(SUPERSAMPLE, 2);
 
@@ -127,10 +128,11 @@ function pixelColor(n) {
  * @param e WebWorker message.
  */
 onmessage = function(e) {
-    const size = e.data;
-    console.log('onmessage: ' + size);
+    const width = e.data[0];
+    const height = e.data[1];
+    const options = e.data[2];
 
-    const data = drawMandelbrot(size[0], size[1]);
+    const data = drawMandelbrot(width, height, options);
     console.log('Done');
 
     // Pass buffer back to page
