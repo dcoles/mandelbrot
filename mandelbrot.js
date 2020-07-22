@@ -20,7 +20,7 @@ function drawMandelbrot(width, height, options) {
     const xoff = -(options.offsetX || 0);
     const yoff = -(options.offsetY || 0);
     const scale = (options.scale || SCALE);
-    const ssStep = 1 / (scale * SUPERSAMPLE);
+    const ssStep = 1 / (scale * SUPERSAMPLE + 2);
     const ssNorm = Math.pow(SUPERSAMPLE, 2);
 
     let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
@@ -33,8 +33,8 @@ function drawMandelbrot(width, height, options) {
         const yadj = (y + yoff) / scale;
 
         let pixel = new Uint8ClampedArray(BYTES_PER_PIXEL);
-        for (let i = 0; i < SUPERSAMPLE; i++) {
-            for (let j = 0; j < SUPERSAMPLE; j++) {
+        for (let i = 1; i < SUPERSAMPLE + 1; i++) {
+            for (let j = 1; j < SUPERSAMPLE + 1; j++) {
                 const c = [xadj + i * ssStep, yadj + j * ssStep];
                 let n = escape(c, MAX_ITERATIONS);
                 let p = pixelColor(n);
