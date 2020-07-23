@@ -8,6 +8,7 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <script>
+      const N = 8;  // Parallel chunks to render (must be a multiple of height)
       const canvas = document.getElementById('canvas');
 
       window.addEventListener('load', function(e) {
@@ -16,22 +17,35 @@
               return;
           }
 
+          draw();
+      });
+
+      function draw() {
           const ctx = canvas.getContext('2d');
 
           ctx.font = '12px sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('Rendering fractal...', canvas.width / 2, canvas.height / 2);
 
-          const options = {
-              scale: 300,
-              offsetX: 2 / 3 * canvas.width,
-              offsetY: canvas.height / 2,
-          };
-          drawMandelbrot(ctx, canvas.width, canvas.height, options, function(imageData) {
-              // Draw completed fractal
-              ctx.putImageData(imageData, 0, 0);
-          });
-      });
+          const chunkWidth = canvas.width;
+          const chunkHeight = canvas.height / N;
+          for (let i = 0; i < 1; i++) {
+              for (let j = 0; j < N; j++) {
+                  const y = j * chunkHeight;
+
+                  const options = {
+                      scale: 300,
+                      offsetX: 2 / 3 * canvas.width,
+                      offsetY: canvas.height / 2 - y,
+                  };
+
+                  drawMandelbrot(ctx, chunkWidth, chunkHeight, options, function (imageData) {
+                      // Draw completed fractal
+                      ctx.putImageData(imageData, 0, y);
+                  });
+              }
+          }
+      }
 
       function drawMandelbrot(ctx, width, height, options, cb) {
           const worker = new Worker('mandelbrot.js');
