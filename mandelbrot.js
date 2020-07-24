@@ -133,7 +133,6 @@ onmessage = function(e) {
     const options = e.data[2];
 
     const data = drawMandelbrot(width, height, options);
-    console.log('Done');
 
     // Pass buffer back to page
     postMessage(data);

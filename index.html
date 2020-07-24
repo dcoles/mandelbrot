@@ -10,6 +10,8 @@
   <script>
       const N = 8;  // Parallel chunks to render (must be a multiple of height)
       const canvas = document.getElementById('canvas');
+      let posX = 0;
+      let posY = 0;
 
       window.addEventListener('load', function(e) {
           if (!window.Worker) {
@@ -17,10 +19,17 @@
               return;
           }
 
-          draw();
+          draw(2 / 3 * canvas.width, canvas.height / 2, 300);
       });
 
-      function draw() {
+      canvas.addEventListener('click', function (e) {
+          posX += canvas.width / 2 - e.offsetX;
+          posY += canvas.height / 2 - e.offsetY;
+
+          draw(2 / 3 * canvas.width + posX, canvas.height / 2 + posY, 300);
+      });
+
+      function draw(offsetX, offsetY, scale) {
           const ctx = canvas.getContext('2d');
 
           ctx.font = '12px sans-serif';
@@ -34,9 +43,9 @@
                   const y = j * chunkHeight;
 
                   const options = {
-                      scale: 300,
-                      offsetX: 2 / 3 * canvas.width,
-                      offsetY: canvas.height / 2 - y,
+                      scale: scale,
+                      offsetX: offsetX,
+                      offsetY: offsetY - y,
                   };
 
                   drawMandelbrot(ctx, chunkWidth, chunkHeight, options, function (imageData) {
