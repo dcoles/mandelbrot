@@ -8,10 +8,16 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <script>
-      const N = 8;  // Parallel chunks to render (must be a multiple of height)
       const canvas = document.getElementById('canvas');
+
+      const N = 8;  // Parallel chunks to render (must be a multiple of height)
+      const midX = canvas.width / 2;
+      const midY = canvas.height / 2;
+      const zoomFactor = Math.E;
+
       let posX = 0;
       let posY = 0;
+      let scale = 300;
 
       window.addEventListener('load', function(e) {
           if (!window.Worker) {
@@ -19,17 +25,30 @@
               return;
           }
 
-          draw(2 / 3 * canvas.width, canvas.height / 2, 300);
+          draw();
       });
 
-      canvas.addEventListener('click', function (e) {
-          posX += canvas.width / 2 - e.offsetX;
-          posY += canvas.height / 2 - e.offsetY;
+      canvas.addEventListener('mouseup', function (e) {
+          if (e.button > 1) {
+              // Only handle left/middle click
+              return false;
+          }
 
-          draw(2 / 3 * canvas.width + posX, canvas.height / 2 + posY, 300);
+          if (e.button === 0) {
+              // Left click
+              scale *= zoomFactor;
+              posX = zoomFactor * (posX + midX - e.offsetX);
+              posY = zoomFactor * (posY + midY - e.offsetY);
+          } else {
+              // Middle click
+              posX += midX - e.offsetX;
+              posY += midY - e.offsetY;
+          }
+
+          draw(posX, posY, scale);
       });
 
-      function draw(offsetX, offsetY, scale) {
+      function draw() {
           const ctx = canvas.getContext('2d');
 
           ctx.font = '12px sans-serif';
@@ -44,8 +63,8 @@
 
                   const options = {
                       scale: scale,
-                      offsetX: offsetX,
-                      offsetY: offsetY - y,
+                      offsetX: midX + posX,
+                      offsetY: midY + posY - y,
                   };
 
                   drawMandelbrot(ctx, chunkWidth, chunkHeight, options, function (imageData) {
