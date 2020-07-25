@@ -14,11 +14,13 @@
       const N = 8;  // Parallel chunks to render (must be a multiple of height)
       const midX = canvas.width / 2;
       const midY = canvas.height / 2;
-      const zoomFactor = Math.E;
+      const initialZoom = 300;
+      const zoomFactor = 2;
 
       let posX = 0;
       let posY = 0;
-      let scale = 300;
+      let zoom = 1;
+      let busy = 0;  // Number of busy workers
 
       window.addEventListener('load', function(e) {
           if (!window.Worker) {
@@ -26,35 +28,65 @@
               return;
           }
 
+          parseHash();
           draw();
       });
 
-      canvas.addEventListener('mouseup', function (e) {
-          if (e.button > 1) {
+      window.addEventListener('hashchange', function(event) {
+          if (busy) {
+              return;
+          }
+
+          parseHash();
+          draw();
+      });
+
+      canvas.addEventListener('mouseup', function (event) {
+          if (busy) {
+              return;
+          }
+
+          if (event.button > 1) {
               // Only handle left/middle click
               return false;
           }
 
-          if (e.button === 0) {
+          if (event.button === 0) {
               // Left click
-              scale *= zoomFactor;
-              posX = zoomFactor * (posX + midX - e.offsetX);
-              posY = zoomFactor * (posY + midY - e.offsetY);
-          } else {
-              // Middle click
-              posX += midX - e.offsetX;
-              posY += midY - e.offsetY;
+              zoom *= zoomFactor;
           }
 
-          draw(posX, posY, scale);
+          posX += (midX - event.offsetX) / zoom;
+          posY += (midY - event.offsetY) / zoom;
+
+          draw();
       });
+
+      function parseHash() {
+          const xyscale = window.location.hash.split('@', 2);
+          const xy = xyscale[0].split(',', 2);
+
+          zoom = parseInt(xyscale[1]) || 1;
+          posX = parseFloat(xy[0]) || 0;
+          posY = parseFloat(xy[1]) || 0;
+      }
+
+      function updateHash() {
+          const hash = `#${posX},${posY}@${zoom}`;
+          window.history.pushState(null, '', hash);
+      }
 
       function draw() {
           const ctx = canvas.getContext('2d');
 
           ctx.font = '12px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('Rendering fractal...', canvas.width / 2, canvas.height / 2);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(midX - 60, midY - 13, 120, 19);
+          ctx.fillStyle = 'black';
+          ctx.fillText('Rendering fractal...', midX, midY);
+
+          updateHash();
 
           const chunkWidth = canvas.width;
           const chunkHeight = canvas.height / N;
@@ -63,14 +95,16 @@
                   const y = j * chunkHeight;
 
                   const options = {
-                      scale: scale,
-                      offsetX: midX + posX,
-                      offsetY: midY + posY - y,
+                      scale: initialZoom * zoom,
+                      offsetX: midX + (posX * zoom),
+                      offsetY: midY + (posY * zoom) - y,
                   };
 
+                  busy += 1;
                   drawMandelbrot(ctx, chunkWidth, chunkHeight, options, function (imageData) {
                       // Draw completed fractal
                       ctx.putImageData(imageData, 0, y);
+                      busy -= 1;
                   });
               }
           }
