@@ -1,7 +1,7 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
-const SCALE = 0.4;  // Scale of the image
-const SUPERSAMPLE = 4;  // NxN super-sampling
+const SCALE = 300;  // Scale of the image
+const SUPERSAMPLE = 2;  // NxN super-sampling
 const BAILOUT = 256;  // Distance after which the point is considered to have escaped
 const MAX_ITERATIONS = 100;  // Maximum iterations to test for escape
 const TARGET = 20;  // Steps of TARGET colour
