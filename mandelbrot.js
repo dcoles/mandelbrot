@@ -1,13 +1,12 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
-const SCALE = 300;  // Scale of the image
+const SCALE = 100;  // Scale of the image
 const SUPERSAMPLE = 2;  // NxN super-sampling
 const BAILOUT = 256;  // Distance after which the point is considered to have escaped
 const MAX_ITERATIONS = 100;  // Maximum iterations to test for escape
-const TARGET = 20;  // Steps of TARGET colour
-const STEPS = 25;  // Steps out from TARGET to black
+const TARGET = 29;  // Steps of TARGET colour
 
-const GROWTH = Math.pow(255, 1 / STEPS);
+const GROWTH = Math.pow(255, 2 / MAX_ITERATIONS);
 
 /**
  * Draw Mandelbrot onto Canvas.
@@ -22,6 +21,7 @@ function drawMandelbrot(width, height, options) {
     const scale = (options.scale || SCALE);
     const ssStep = 1 / (scale * SUPERSAMPLE + 2);
     const ssNorm = Math.pow(SUPERSAMPLE, 2);
+
 
     let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
     for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
