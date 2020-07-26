@@ -12,7 +12,6 @@
       const canvas = document.getElementById('canvas');
 
       const N = 8;  // Parallel chunks to render (must be a multiple of height)
-      const initialZoom = 300;
       const zoomFactor = 2;
 
       let posX = 0;
@@ -135,7 +134,7 @@
                       const y = j * chunkHeight;
 
                       const options = {
-                          scale: initialZoom * zoom,
+                          scale: zoom,
                           offsetX: midX + (posX * zoom),
                           offsetY: midY + (posY * zoom) - y,
                       };

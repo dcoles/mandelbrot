@@ -1,12 +1,8 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
-const SCALE = 100;  // Scale of the image
-const SUPERSAMPLE = 2;  // NxN super-sampling
+const BASE_SCALE = 256;  // Image is pre-scaled to this value
+const SUPERSAMPLE = 1;  // NxN super-sampling
 const BAILOUT = 256;  // Distance after which the point is considered to have escaped
-const MAX_ITERATIONS = 100;  // Maximum iterations to test for escape
-const TARGET = 29;  // Steps of TARGET colour
-
-const GROWTH = Math.pow(255, 2 / MAX_ITERATIONS);
 
 /**
  * Draw Mandelbrot onto Canvas.
@@ -18,10 +14,9 @@ const GROWTH = Math.pow(255, 2 / MAX_ITERATIONS);
 function drawMandelbrot(width, height, options) {
     const xoff = -(options.offsetX || 0);
     const yoff = -(options.offsetY || 0);
-    const scale = (options.scale || SCALE);
+    const scale = BASE_SCALE * (options.scale || 1);
     const ssStep = 1 / (scale * SUPERSAMPLE + 2);
     const ssNorm = Math.pow(SUPERSAMPLE, 2);
-
 
     let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
     for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
@@ -36,7 +31,7 @@ function drawMandelbrot(width, height, options) {
         for (let i = 1; i < SUPERSAMPLE + 1; i++) {
             for (let j = 1; j < SUPERSAMPLE + 1; j++) {
                 const c = [xadj + i * ssStep, yadj + j * ssStep];
-                let n = escape(c, MAX_ITERATIONS);
+                let n = escape(c, scale);
                 let p = pixelColor(n);
                 for (let k = 0; k < BYTES_PER_PIXEL; k++) {
                     pixel[k] += p[k] / ssNorm;
@@ -100,18 +95,10 @@ function pixelColor(n) {
         data[1] = 0xff;  // G
         data[2] = 0xff;  // B
         data[3] = 0xff;  // A
-/* For debugging
-    } else if (n === TARGET) {
-        // Red (#ff0000)
-        data[0] = 0xff;  // R
-        data[1] = 0x00;  // G
-        data[2] = 0x00;  // B
-        data[3] = 0xff;  // A
-*/
     } else {
         // Blue fire
-        const intensity = Math.pow(GROWTH, n - TARGET);
-        data[0]   = (intensity - 2) * 0xff;  // R
+        const intensity = 3 * (1 - Math.pow(Math.E, -n / 128));
+        data[0] = (intensity - 2) * 0xff;  // R
         data[1] = (intensity - 1) * 0xff;  // G
         data[2] = intensity * 0xff;  // B
         data[3] = 0xff;  // A
