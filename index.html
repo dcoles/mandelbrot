@@ -44,18 +44,27 @@
       });
 
       canvas.addEventListener('mouseup', function(event) {
-          if (event.button > 1) {
-              // Only handle left/middle click
+          if (event.button !== 1) {
+              // Only handle middle click
               return false;
-          }
-
-          if (event.button === 0) {
-              // Left click
-              zoom *= zoomFactor;
           }
 
           posX += (canvas.width / 2 - event.offsetX) / zoom;
           posY += (canvas.height / 2 - event.offsetY) / zoom;
+
+          draw();
+      });
+
+      canvas.addEventListener('wheel', function(event) {
+          if (event.deltaY < 0) {
+              // zoom in
+              zoom *= zoomFactor;
+              posX += (canvas.width / 2 - event.offsetX) / zoom;
+              posY += (canvas.height / 2 - event.offsetY) / zoom;
+          } else {
+              // zoom out
+              zoom /= zoomFactor;
+          }
 
           draw();
       });
@@ -86,7 +95,7 @@
 
           ctx.font = '12px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillStyle = '#ffffffcc';
+          ctx.fillStyle = '#eeffff';
           ctx.fillRect(midX - 60, midY - 13, 120, 19);
           ctx.strokeRect(midX - 60, midY - 13, 120, 19);
           ctx.fillStyle = '#000000';
