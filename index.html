@@ -83,7 +83,7 @@
           const xyscale = window.location.hash.slice(1).split('@', 2);
           const xy = xyscale[0].split(',', 2);
 
-          zoom = parseInt(xyscale[1]) || 1;
+          zoom = parseFloat(xyscale[1]) || 1;
           posX = parseFloat(xy[0]) || 0;
           posY = parseFloat(xy[1]) || 0;
       }
