@@ -69,6 +69,16 @@
           draw();
       });
 
+      window.addEventListener('keydown', function(event) {
+          if (event.key === 'h') {
+              zoom = 1;
+              posX = 0;
+              posY = 0;
+
+              draw();
+          }
+      });
+
       function parseHash() {
           const xyscale = window.location.hash.slice(1).split('@', 2);
           const xy = xyscale[0].split(',', 2);
