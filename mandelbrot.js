@@ -9,6 +9,7 @@ const BAILOUT = 256;  // Distance after which the point is considered to have es
  * @param {number} width Width of the drawing.
  * @param {number} height Height of the drawing.
  * @param {object} options Custom options.
+ * @return {ImageData} Rendered image.
  */
 function drawMandelbrot(width, height, options) {
     const xoff = -(options.offsetX || 0);

@@ -9,23 +9,27 @@
 <body style="padding: 0; margin: 0; background: black;">
   <canvas id="canvas" width="1280" height="720" style="position: absolute;"></canvas>
   <script>
+      'use strict';
+
       const canvas = document.getElementById('canvas');
 
-      const N = 8;  // Parallel chunks to render (must be a multiple of height)
-      const zoomFactor = 2;
+      const RENDER_DELAY_MS = 250;
+      const ZOOM_FACTOR = 2;
 
       let posX = 0;
       let posY = 0;
       let zoom = 1;
-      let timeout = null;
-      let workers = [];
-      let generation = 0;
+      let renderDelayTimer = null;  // renderDelayTimer before render starts
+      let workers = [];  // active workers
+      let generation = 0;  // unique generation counter
 
       window.addEventListener('load', function() {
           if (!window.Worker) {
               window.alert('Sorry! This browser does not support web workers');
               return;
           }
+
+          console.log(`Using ${navigator.hardwareConcurrency} workers`);
 
           parseHash();
           updateCanvasSize();
@@ -57,12 +61,12 @@
       canvas.addEventListener('wheel', function(event) {
           if (event.deltaY < 0) {
               // zoom in
-              zoom *= zoomFactor;
+              zoom *= ZOOM_FACTOR;
               posX += (canvas.width / 2 - event.offsetX) / zoom;
               posY += (canvas.height / 2 - event.offsetY) / zoom;
           } else {
               // zoom out
-              zoom /= zoomFactor;
+              zoom /= ZOOM_FACTOR;
           }
 
           draw();
@@ -112,58 +116,74 @@
 
           updateHash();
 
-          clearTimeout(timeout);
-          timeout = setTimeout(function() {
+          clearTimeout(renderDelayTimer);
+          renderDelayTimer = setTimeout(function() {
+              const chunkHeight = 4;
+              const chunks = canvas.height / chunkHeight + 1;
+              const worklist = Array.from({length: chunks}, (v, i) => i);
+
               // Kill any remaining workers
-              do {
-                  let worker = workers.pop();
-                  if (worker === undefined) {
-                      break;
-                  }
-              } while (true);
+              for (const worker of workers) {
+                  worker.terminate();
+              }
 
-              // Update the generation
+              // Create a new set of workers
               generation += 1;
-              const thisGeneration = generation;
+              workers = [];
+              const freeWorkers = [];
+              for (let i = 0; i < navigator.hardwareConcurrency; i++) {
+                  const worker = new Worker('mandelbrot.js');
+                  worker.generation = generation;
+                  worker.id = i;
 
-              const chunkWidth = canvas.width;
-              // Image length must be a multiple of 4
-              const chunkHeight = Math.floor(canvas.height / N / 4 + 1) * 4;
-              for (let i = 0; i < 1; i++) {
-                  for (let j = 0; j < N; j++) {
-                      const y = j * chunkHeight;
+                  workers.push(worker);
+                  freeWorkers.push(worker);
 
+                  console.time(`worker ${worker.generation}.${worker.id}`);
+              }
+
+              function schedule() {
+                  while (freeWorkers.length) {
+                      const worker = freeWorkers.pop();
+                      const work = worklist.shift();
+                      if (work === undefined) {
+                          // No more work
+                          console.timeEnd(`worker ${worker.generation}.${worker.id}`);
+                          worker.terminate();
+                          continue
+                      }
+
+                      // Returns rendered ImageData
+                      worker.onmessage = function(msg) {
+                          freeWorkers.push(worker);
+
+                          // Make sure we don't draw the wrong generation
+                          if (worker.generation !== generation) {
+                              return;
+                          }
+
+                          // Draw completed fractal
+                          ctx.putImageData(msg.data, 0, y);
+
+                          // Schedule more work
+                          schedule();
+                      };
+
+                      const y = work * chunkHeight;
                       const options = {
                           scale: zoom,
                           offsetX: midX + (posX * zoom),
                           offsetY: midY + (posY * zoom) - y,
                       };
 
-                      const worker = drawMandelbrot(ctx, chunkWidth, chunkHeight, options, function (imageData) {
-                          // Make sure we don't draw the wrong generation
-                          if (generation !== thisGeneration) {
-                              return;
-                          }
-
-                          // Draw completed fractal
-                          ctx.putImageData(imageData, 0, y);
-                      });
-                      workers.push(worker);
+                      // render([width, height, options])
+                      worker.postMessage([canvas.width, chunkHeight, options]);
                   }
               }
 
-          }, 100);
-      }
-
-      function drawMandelbrot(ctx, width, height, options, cb) {
-          const worker = new Worker('mandelbrot.js');
-          worker.onmessage = function(e) {
-              cb(e.data);
-          };
-
-          // Start rendering
-          worker.postMessage([width, height, options]);
-          return worker;
+              // Kick workers off
+              schedule();
+          }, RENDER_DELAY_MS);
       }
   </script>
 </body>
