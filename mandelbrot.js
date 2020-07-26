@@ -1,7 +1,6 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
 const BASE_SCALE = 256;  // Image is pre-scaled to this value
-const SUPERSAMPLE = 1;  // NxN super-sampling
 const BAILOUT = 256;  // Distance after which the point is considered to have escaped
 
 /**
@@ -15,8 +14,6 @@ function drawMandelbrot(width, height, options) {
     const xoff = -(options.offsetX || 0);
     const yoff = -(options.offsetY || 0);
     const scale = BASE_SCALE * (options.scale || 1);
-    const ssStep = 1 / (scale * SUPERSAMPLE + 2);
-    const ssNorm = Math.pow(SUPERSAMPLE, 2);
 
     let data = new Uint8ClampedArray(width * height * BYTES_PER_PIXEL);
     for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
@@ -28,15 +25,10 @@ function drawMandelbrot(width, height, options) {
         const yadj = (y + yoff) / scale;
 
         let pixel = new Uint8ClampedArray(BYTES_PER_PIXEL);
-        for (let i = 1; i < SUPERSAMPLE + 1; i++) {
-            for (let j = 1; j < SUPERSAMPLE + 1; j++) {
-                const c = [xadj + i * ssStep, yadj + j * ssStep];
-                let n = escape(c, scale);
-                let p = pixelColor(n);
-                for (let k = 0; k < BYTES_PER_PIXEL; k++) {
-                    pixel[k] += p[k] / ssNorm;
-                }
-            }
+        let n = escape([xadj, yadj], scale);
+        let p = pixelColor(n);
+        for (let k = 0; k < BYTES_PER_PIXEL; k++) {
+            pixel[k] += p[k];
         }
 
         data.set(pixel, i);
