@@ -1,0 +1,97 @@
+body {
+    padding: 0;
+    margin: 0;
+    background: black;
+    font-family: sans-serif;
+}
+
+@keyframes rotating {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.throbber {
+    display: inline-block;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0;
+    margin: 0;
+    animation: rotating 2s linear infinite;
+}
+
+#canvas {
+    position: absolute;
+}
+
+#overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20em;
+    transform: translate(-50%, -50%);
+}
+
+#overlay .text {
+    padding: 0.5em;
+    margin: 0.25em;
+    background: #eeeeffee;
+    text-align: center;
+    border: solid 1px darkgray;
+    border-radius: 4px;
+
+    display: none;
+}
+
+#overlay .text h1 {
+    font-size: large;
+}
+
+#overlay .text td {
+    text-align: left;
+    padding: 0.1em 0.5em;
+}
+
+#nav {
+    position: absolute;
+    right: 0;
+    height: 100%;
+}
+
+#help {
+    background: white;
+    width: 1.25em;
+    height: 1.25em;
+    margin: 0.25em;
+    border: solid 1px black;
+    border-radius: 2px;
+    user-select: none;
+}
+
+#help:hover {
+    background: cyan;
+}
+
+#help:active {
+    background: darkblue;
+}
+
+#help div {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    transform: translate(-50%, -50%);
+}
+
+#helpText kbd {
+    display: inline-block;
+    padding: 0.1em;
+    min-width: 1em;
+    border: solid 1px black;
+    border-radius: 2px;
+}

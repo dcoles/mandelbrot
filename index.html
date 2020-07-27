@@ -5,16 +5,41 @@
   <title>Blue Dragon Fire</title>
   <script src="mandelbrot.js"></script>
   <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body style="padding: 0; margin: 0; background: black;">
-  <canvas id="canvas" width="1280" height="720" style="position: absolute;"></canvas>
+<body>
+  <canvas id="canvas" width="1280" height="720"></canvas>
+
+  <div id="overlay">
+    <div class="text" id="renderingText">Rendering... <div class="throbber">⚙️</div></div>
+    <div class="text" id="helpText" onclick="hide(this)">
+      <h1>Help</h1>
+      <table>
+        <tr><td>mouse wheel</td><td>Zoom in/out</td></tr>
+        <tr><td>middle click</td><td>Center</td></tr>
+        <tr><td><kbd>Home</kbd> key</td><td>Go to default view</td></tr>
+        <tr><td><kbd>Escape</kbd> key</td><td>Stop rendering</td></tr>
+        <tr><td><kbd>Page Up</kbd> key</td><td>Zoom-in</td></tr>
+        <tr><td><kbd>Page Down</kbd> key</td><td>Zoom-out</td></tr>
+        <tr><td><kbd>h</kbd> / <kbd>?</kbd> key</td><td>Show this help</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div id="nav">
+    <div id="help" onclick="toggle(helpText)"><div>?</div></div>
+  </div>
+
   <script>
       'use strict';
 
       const canvas = document.getElementById('canvas');
+      const renderingText = document.getElementById('renderingText');
+      const helpText = document.getElementById('helpText');
 
       const RENDER_DELAY_MS = 250;
       const ZOOM_FACTOR = 2;
+      const N_WORKERS = navigator.hardwareConcurrency || 1;
 
       let posX = 0;
       let posY = 0;
@@ -29,7 +54,7 @@
               return;
           }
 
-          console.log(`Using ${navigator.hardwareConcurrency} workers`);
+          console.log(`Using ${N_WORKERS} workers`);
 
           parseHash();
           updateCanvasSize();
@@ -46,19 +71,20 @@
           draw();
       });
 
-      canvas.addEventListener('mouseup', function(event) {
+      window.addEventListener('mouseup', function(event) {
           if (event.button !== 1) {
               // Only handle middle click
               return false;
           }
 
+          hide(helpText);
           posX += (canvas.width / 2 - event.offsetX) / zoom;
           posY += (canvas.height / 2 - event.offsetY) / zoom;
 
           draw();
       });
 
-      canvas.addEventListener('wheel', function(event) {
+      window.addEventListener('wheel', function(event) {
           if (event.deltaY < 0) {
               // zoom in
               zoom *= ZOOM_FACTOR;
@@ -72,16 +98,76 @@
           draw();
       });
 
+      /** Key handler */
       window.addEventListener('keydown', function(event) {
-          if (event.key === 'h') {
-              zoom = 1;
-              posX = 0;
-              posY = 0;
+          switch (event.key) {
+              // Go to default view
+              case 'Home': {
+                  event.preventDefault();
+                  zoom = 1;
+                  posX = 0;
+                  posY = 0;
+                  draw();
+                  break;
+              }
 
-              draw();
+              // Stop rendering / dismiss help
+              case 'Escape': {
+                  event.preventDefault();
+                  hide(helpText);
+                  hide(renderingText);
+                  for (let worker of workers) {
+                      worker.terminate();
+                  }
+                  break;
+              }
+
+              // Zoom-in
+              case 'PageUp': {
+                  event.preventDefault();
+                  zoom *= ZOOM_FACTOR;
+                  draw();
+                  break;
+              }
+
+              // Zoom-out
+              case 'PageDown': {
+                  event.preventDefault();
+                  zoom /= ZOOM_FACTOR;
+                  draw();
+                  break;
+              }
+
+              // Display help
+              case '?':
+              case 'h': {
+                  event.preventDefault();
+                  show(helpText);
+                  break;
+              }
           }
       });
 
+      /** Toggle display of `block` element */
+      function toggle(element) {
+          if (element.style.display === 'none') {
+              show(element);
+          } else {
+              hide(element);
+          }
+      }
+
+      /** Show `block` element */
+      function show(element) {
+          element.style.display = 'block';
+      }
+
+      /** Hide `block` element */
+      function hide(element) {
+          element.style.display = 'none';
+      }
+
+      /** Parse URL hash */
       function parseHash() {
           const xyscale = window.location.hash.slice(1).split('@', 2);
           const xy = xyscale[0].split(',', 2);
@@ -91,29 +177,26 @@
           posY = parseFloat(xy[1]) || 0;
       }
 
-      function updateCanvasSize() {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-      }
-
+      /** Update URL hash */
       function updateHash() {
           const hash = `#${posX},${posY}@${zoom}`;
           window.history.pushState(null, '', hash);
       }
 
+      /** Update canvas size to window size */
+      function updateCanvasSize() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+      }
+
+      /** Draw current fractal */
       function draw() {
           const ctx = canvas.getContext('2d');
           const midX = canvas.width / 2;
           const midY = canvas.height / 2;
 
-          ctx.font = '12px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#eeffff';
-          ctx.fillRect(midX - 60, midY - 13, 120, 19);
-          ctx.strokeRect(midX - 60, midY - 13, 120, 19);
-          ctx.fillStyle = '#000000';
-          ctx.fillText('Rendering fractal...', midX, midY);
-
+          hide(helpText);
+          show(renderingText);
           updateHash();
 
           clearTimeout(renderDelayTimer);
@@ -131,7 +214,7 @@
               generation += 1;
               workers = [];
               const freeWorkers = [];
-              for (let i = 0; i < navigator.hardwareConcurrency; i++) {
+              for (let i = 0; i < N_WORKERS; i++) {
                   const worker = new Worker('mandelbrot.js');
                   worker.generation = generation;
                   worker.id = i;
@@ -142,6 +225,7 @@
                   console.time(`worker ${worker.generation}.${worker.id}`);
               }
 
+              let done = 0;
               function schedule() {
                   while (freeWorkers.length) {
                       const worker = freeWorkers.pop();
@@ -149,7 +233,12 @@
                       if (work === undefined) {
                           // No more work
                           console.timeEnd(`worker ${worker.generation}.${worker.id}`);
+                          done += 1;
                           worker.terminate();
+
+                          if (done === N_WORKERS) {
+                              hide(renderingText);
+                          }
                           continue
                       }
 
