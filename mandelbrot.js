@@ -25,47 +25,41 @@ function drawMandelbrot(width, height, options) {
         const xadj = (x + xoff) / scale;
         const yadj = (y + yoff) / scale;
 
-        let n = escape([xadj, yadj], scale);
+        let n = escape(xadj, yadj, scale);
         setPixelColor(data, n, i);
     }
 
     return new ImageData(data, width, height);
 }
 
-
 /**
  * Calculate the number of iterations required to escape.
- * @param {[number, number]} c Position [x, y] (complex number).
+ * @param {number} x X position.
+ * @param {number} y X position.
  * @param {number} maxIterations Maximum iterations to attempt.
  * @returns {number} Smoothed number of iterations required to escape or `Infinity`.
  */
-function escape(c, maxIterations) {
-    let z = [0, 0];
+function escape(x, y, maxIterations) {
+    let zRe = 0;
+    let zIm = 0;
     for (let n = 0; n < maxIterations; n++) {
-        z = f(z, c);
+        // f(z) = z² + c
+        // let: z = a + b𝑖
+        // (a + b𝑖)² + c = a² - b² + 2ab𝑖 + c
+        const zRe1 = zRe * zRe - zIm * zIm + x;  // Real
+        const zIm1 = 2 * zRe * zIm + y;  // Imaginary
 
-        const dist = Math.sqrt(Math.pow(z[0], 2) + Math.pow(z[1], 2));
+        const dist = Math.sqrt(Math.pow(zIm1, 2) + Math.pow(zRe1, 2));
         if (dist > BAILOUT) {
             // Smoothing function
             return n - Math.log( Math.log(dist) / Math.log(BAILOUT)) / Math.log(2);
         }
+
+        zRe = zRe1;
+        zIm = zIm1;
     }
 
     return Infinity;
-}
-
-/**
- * Mandelbrot relation.
- *
- * f(z) = z² + c
- */
-function f(z, c) {
-    // let: z = Re(a) + Im(b)
-    // (a + b𝑖)² = a² - b² + 2ab𝑖
-    return [
-        z[0] * z[0] - z[1] * z[1] + c[0],  // Real
-        2 * z[0] * z[1] + c[1]  // Imaginary
-    ]
 }
 
 /**
