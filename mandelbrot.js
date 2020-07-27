@@ -1,7 +1,7 @@
 const BYTES_PER_PIXEL = 4;  // RGBA
 
 const BASE_SCALE = 256;  // Image is pre-scaled to this value
-const BAILOUT = 256;  // Distance after which the point is considered to have escaped
+const BAILOUT = 65536;  // Distance² after which the point is considered to have escaped
 
 /**
  * Draw Mandelbrot onto Canvas.
@@ -49,9 +49,10 @@ function escape(x, y, maxIterations) {
         const zRe1 = zRe * zRe - zIm * zIm + x;  // Real
         const zIm1 = 2 * zRe * zIm + y;  // Imaginary
 
-        const dist = Math.sqrt(Math.pow(zIm1, 2) + Math.pow(zRe1, 2));
-        if (dist > BAILOUT) {
+        const dist2 = Math.pow(zIm1, 2) + Math.pow(zRe1, 2);
+        if (dist2 > BAILOUT) {
             // Smoothing function
+            const dist = Math.sqrt(dist2);
             return n - Math.log( Math.log(dist) / Math.log(BAILOUT)) / Math.log(2);
         }
 
