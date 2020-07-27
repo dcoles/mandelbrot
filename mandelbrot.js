@@ -25,14 +25,8 @@ function drawMandelbrot(width, height, options) {
         const xadj = (x + xoff) / scale;
         const yadj = (y + yoff) / scale;
 
-        let pixel = new Uint8ClampedArray(BYTES_PER_PIXEL);
         let n = escape([xadj, yadj], scale);
-        let p = pixelColor(n);
-        for (let k = 0; k < BYTES_PER_PIXEL; k++) {
-            pixel[k] += p[k];
-        }
-
-        data.set(pixel, i);
+        setPixelColor(data, n, i);
     }
 
     return new ImageData(data, width, height);
@@ -77,27 +71,25 @@ function f(z, c) {
 /**
  * Calculate color of pixel based on number of iterations to escape.
  *
+ * @param {Uint8ClampedArray} data Output buffer.
  * @param {number} n Number of iterations.
+ * @param {number} offset Offset in output buffer.
  */
-function pixelColor(n) {
-    const data = new Uint8ClampedArray(4);
-
+function setPixelColor(data, n, offset) {
     if (n === Infinity) {
         // White (#ffffff)
-        data[0] = 0xff;  // R
-        data[1] = 0xff;  // G
-        data[2] = 0xff;  // B
-        data[3] = 0xff;  // A
+        data[offset] = 0xff;  // R
+        data[offset + 1] = 0xff;  // G
+        data[offset + 2] = 0xff;  // B
+        data[offset + 3] = 0xff;  // A
     } else {
         // Blue fire
         const intensity = 3 * (1 - Math.pow(Math.E, -n / 128));
-        data[0] = (intensity - 2) * 0xff;  // R
-        data[1] = (intensity - 1) * 0xff;  // G
-        data[2] = intensity * 0xff;  // B
-        data[3] = 0xff;  // A
+        data[offset] = (intensity - 2) * 0xff;  // R
+        data[offset + 1] = (intensity - 1) * 0xff;  // G
+        data[offset + 2] = intensity * 0xff;  // B
+        data[offset + 3] = 0xff;  // A
     }
-
-    return data;
 }
 
 /**
